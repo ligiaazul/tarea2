@@ -1,0 +1,184 @@
+---
+title: "tarea2"
+author: "Ligia_Espinoza"
+format: html
+editor: visual
+---
+
+```{r}
+#| label: Este repositorio contiene los datos de COVID en Costa Rica al 30 de mayo de 2022, disponibles en https://oges.ministeriodesalud.go.cr/.
+#| include: true
+#| echo: false
+```
+
+
+```{r}
+#| message: false
+#| warning: false
+library(tidyverse)
+library(ggplot2)
+library(readr)
+library(plotly)
+library(DT)
+library(dplyr)
+```
+
+```{r}
+#| message: false
+#| warning: false
+#Carga del archivo CSV de entrada en un dataframe con la función
+#read_delim() de readr
+covid_general <-
+  read_delim(
+    file = "c:/r/quarto/Datoscovid/05_30_22_CSV_GENERAL.csv",
+    col_select = c(
+      "FECHA",
+      "hom_posi",
+      "muj_posi",
+      "menor_posi",
+      "adul_posi",
+      "am_posi",
+      "nue_posi"
+    )
+   )
+
+# Cambio de nombre de columnas
+covid_general <-
+  covid_general |>
+  rename(
+    Hombres_positivos = hom_posi,
+    Mujeres_positivos = muj_posi,
+    Menores_positivos = menor_posi,
+    Adultos_positivos = adul_posi,
+    Mayores_positivos = am_posi,
+    Nuevos_positivos =  nue_posi
+  )
+
+# Cambio de tipo de datos de la columna fecha, de str a date
+covid_general <-
+  covid_general |>
+  mutate(FECHA = as.Date(FECHA, format = "%d/%m/%Y"))
+```
+
+```{r}
+# Tabla de datos de COVID generales
+covid_general |>
+  datatable(options = list(
+    pageLength = 5,
+    language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+  ))
+```
+
+```{r}
+# Gráfico de barras Cantidad de casos positivos nuevos por día
+grafico_barras <-
+covid_general |>
+  ggplot(aes(x = FECHA, y = Nuevos_positivos)) +
+  geom_col() +
+  ggtitle("Cantidad de casos positivos nuevos por día") +
+  xlab("fecha") +
+  ylab("Cantidad casos nuevos positivos") 
+
+# Gráfico de barras plotly
+ggplotly(grafico_barras) |> 
+  config(locale = "es")
+```
+
+```{r}
+# Gráfico de líneas evolución de los casos positivos acumulados de COVID por género
+grafico_lineas_ggplot2 <-
+  covid_general |>
+  ggplot(aes(x = FECHA, y = value, color = variable)) +
+  geom_line(aes(y = Hombres_positivos, color = "Hombres")) +
+  geom_line(aes(y = Mujeres_positivos, color = "Mujeres")) +
+  scale_color_manual( # colores
+    "",
+    values = c(
+      "Hombres" = "blue",
+      "Mujeres" = "green"
+    )
+  ) +
+  ggtitle("Evolución de los Casos Positivos acumulados por género") +
+  xlab("Fecha") +
+  ylab("Casos") 
+    
+
+# Gráfico de dispersión plotly
+ggplotly(grafico_lineas_ggplot2) |>
+  config(locale = 'es')
+```
+```{r}
+# Gráfico de líneas con la evolución de los casos positivos acumulados de COVID por grupo de edad
+grafico_lineas_ggplot2 <-
+  covid_general |>
+  ggplot(aes(x = FECHA, y = value, color = variable)) +
+  geom_line(aes(y = Menores_positivos, color = "Menores")) +
+  geom_line(aes(y = Adultos_positivos, color = "Adultos")) +
+  geom_line(aes(y = Mayores_positivos, color = "Adultos Mayores")) +
+  scale_color_manual( # colores
+    "",
+    values = c(
+      "Menores" = "blue",
+      "Adultos" = "green",
+      "Adultos Mayores" = "red"
+    )
+  ) +
+  ggtitle("Evolución de los Casos Positivos acumulados por grupo de edad") +
+  xlab("Fecha") +
+  ylab("Casos positivos grupo etario") 
+    
+
+# Gráfico de líneas plotly
+ggplotly(grafico_lineas_ggplot2) |>
+  config(locale = "es")
+```
+
+```{r}
+#| message: false
+#| warning: false
+# Carga de CSV_POSITIVOS y lectura de datos de interés
+covid_cantonal_positivos <-
+  read_delim(
+    file = "c:/r/quarto/Datoscovid/05_30_22_CSV_POSITIVOS.csv",
+    locale = locale(encoding = "WINDOWS-1252"),
+    col_select = c("provincia", "canton", "30/05/2022")
+  )
+
+# Cambio de nombre de columnas
+covid_cantonal_positivos <-
+  covid_cantonal_positivos |>
+  rename(
+    positivos_al_30_mayo_22 = '30/05/2022'
+  )
+
+
+# Borrado de filas con valor NA u "Otros"
+# en la columna canton
+covid_cantonal_positivos <-
+  covid_cantonal_positivos |>
+   filter(!is.na(canton) & canton != "Otros")
+
+# Tabla de datos de COVID cantonales positivos
+covid_cantonal_positivos |>
+  datatable(options = list(
+    pageLength = 5,
+    language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+  ))
+```
+```{r}
+#Histograma Casos Positivos en cantones
+histograma_ggplot2 <-
+covid_cantonal_positivos |>
+  ggplot(aes(x = positivos_al_30_mayo_22)) +
+  geom_histogram(bins = 5) +
+  ggtitle("Distribución de Casos Positivos en Cantones al 30 de mayo de 2022") +
+  xlab("Casos") +
+  ylab("Frecuencia") +
+  labs(subtitle = "Datos")
+
+# Histograma plotly
+ggplotly(histograma_ggplot2) |> 
+  config(locale = 'es')
+```
+
+
